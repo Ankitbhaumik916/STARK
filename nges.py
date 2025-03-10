@@ -31,6 +31,15 @@ def adjust_volume(rotation):
     elif rotation == "counterclockwise":
         pyautogui.press("volumedown")
 
+def detect_pinch(hand_landmarks):
+    """Detect if thumb and index finger are touching (Pinch Gesture)."""
+    thumb_tip = hand_landmarks.landmark[4]
+    index_tip = hand_landmarks.landmark[8]
+    
+    distance = np.sqrt((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2)
+    
+    return distance < 0.05  # Threshold for pinch detection
+
 # Main loop
 while cap.isOpened():
     ret, frame = cap.read()
@@ -44,10 +53,16 @@ while cap.isOpened():
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
             mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+            
+            # Check for wrist rotation (Volume Control)
             rotation = get_wrist_rotation(hand_landmarks)
-            adjust_volume(rotation)  # Adjust volume based on rotation
+            adjust_volume(rotation)
+            
+            # Check for pinch gesture (Play/Pause)
+            if detect_pinch(hand_landmarks):
+                pyautogui.press("playpause")
 
-    cv2.imshow("Twist Volume Control", frame)
+    cv2.imshow("Gesture Media Control", frame)
     
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
